@@ -1,44 +1,46 @@
-from django.shortcuts import get_object_or_404 # Получение объекта или 404 ошибку
-from django.views.generic import DetailView, TemplateView # Классы представлений
-from django.http import HttpResponse 
-from django.template.response import TemplateResponse # Рендеринг шаблонов
-from .models import Category, Prodct, Size, ProductSize 
-from django.db.models import Q # Для сложных запросов
+from django.shortcuts import get_object_or_404
+from django.views.generic import TemplateView, DetailView
+from django.http import HttpResponse
+from django.template.response import TemplateResponse
+from .models import Category, Product, Size
+from django.db.models import Q
 
 
 class IndexView(TemplateView):
     template_name = 'main/base.html'
 
+
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs) # Инициализация контекста
-        context['categories'] = Category.objects.all() # Все категории
+        context = super().get_context_data(**kwargs)
+        context['categories'] = Category.objects.all()
         context['current_category'] = None
-        # context['latest_products'] = Prodct.objects.order_by('-created_at')[:8] # Последние 8 добавленных продуктов
         return context
     
-    def get(self, request, *args, **kwargs): # GET запрос который рендерит шаблон с контекстом
+
+    def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
-        if request.headers.get('HX-Request'): # Проверка на HTMX запрос
+        if request.headers.get('HX-Request'):
             return TemplateResponse(request, 'main/home_content.html', context)
         return TemplateResponse(request, self.template_name, context)
-
+    
 
 class CatalogView(TemplateView):
-    template_name = 'main/base.html'
+    template = 'main/base.html'
 
     FILTER_MAPPING = {
         'color': lambda queryset, value: queryset.filter(color__iexact=value),
-        'min_price': lambda queryset, value: queryset.filter(price__gte=value),
-        'max_price': lambda queryset, value: queryset.filter(price__lte=value),
-        'size': lambda queryset, value: queryset.filter(product_size__size__name__iexact=value),
+        'min_price': lambda queryset, value: queryset.filter(price_gte=value),
+        'max_price': lambda queryset, value: queryset.filter(price_lte=value),
+        'size': lambda queryset, value: queryset.filter(product_sizes__size__name=value),
     }
+
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         category_slug = kwargs.get('category_slug')
         categories = Category.objects.all()
+        products = Product.objects.all().order_by('-created_at')
         current_category = None
-        products = Prodct.objects.all().order_by('-created_at')
 
         if category_slug:
             current_category = get_object_or_404(Category, slug=category_slug)
@@ -47,11 +49,9 @@ class CatalogView(TemplateView):
         query = self.request.GET.get('q')
         if query:
             products = products.filter(
-                Q(name__icontains=query) |
-                Q(description__icontains=query) |
-                Q(color__icontains=query)
+                Q(name__icontains=query) | Q(description__icontains=query)
             )
-        
+
         filter_params = {}
         for param, filter_func in self.FILTER_MAPPING.items():
             value = self.request.GET.get(param)
@@ -60,16 +60,16 @@ class CatalogView(TemplateView):
                 filter_params[param] = value
             else:
                 filter_params[param] = ''
-        
+
         filter_params['q'] = query or ''
 
         context.update({
             'categories': categories,
+            'products': products,
             'current_category': category_slug,
-            'products': products, # Уникальные продукты
             'filter_params': filter_params,
-            'sizes': Size.objects.all(), # Все доступные размеры
-            'search_query': query or '',
+            'sizes': Size.objects.all(),
+            'search_query': query or ''
         })
 
         if self.request.GET.get('show_search') == 'true':
@@ -79,6 +79,7 @@ class CatalogView(TemplateView):
         
         return context
     
+
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
         if request.headers.get('HX-Request'):
@@ -86,13 +87,13 @@ class CatalogView(TemplateView):
                 return TemplateResponse(request, 'main/search_input.html', context)
             elif context.get('reset_search'):
                 return TemplateResponse(request, 'main/search_button.html', {})
-            template = 'main/filter_model.html' if request.GET.get('show_filters') == 'true' else 'main/catalog.html'
+            template = 'main/filter_modal.html' if request.GET.get('show_filters') == 'true' else 'main/catalog.html'
             return TemplateResponse(request, template, context)
-        return TemplateResponse(request, self.template_name, context)
+        return TemplateResponse(request, self.template, context)
     
 
 class ProductDetailView(DetailView):
-    model = Prodct
+    model = Product
     template_name = 'main/base.html'
     slug_field = 'slug'
     slug_url_kwarg = 'slug'
@@ -102,13 +103,16 @@ class ProductDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         product = self.get_object()
         context['categories'] = Category.objects.all()
-        context['related_products'] = Prodct.objects.filter(category=product.category).exclude(id=product.id)[:4]
+        context['related_products'] = Product.objects.filter(
+            category=product.category
+        ).exclude(id=product.id)[:4]
         context['current_category'] = product.category.slug
         return context
     
+
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
         context = self.get_context_data(**kwargs)
         if request.headers.get('HX-Request'):
             return TemplateResponse(request, 'main/product_detail.html', context)
-        raise TemplateResponse(request, self.template_name, context)
+        return TemplateResponse(request, self.template_name, context)

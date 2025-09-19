@@ -1,32 +1,35 @@
 from django.contrib import admin
-from .models import Category, Size, Prodct, ProductSize, ProductImage
-# Register your models here.
+from .models import Category, Size, Product, \
+    ProductImage, ProductSize
 
 
-class ProductImageInline(admin.TabularInline): # 
+class ProductImageInline(admin.TabularInline):
     model = ProductImage
-    extra = 1  # Number of extra forms to display
+    extra = 1
+
 
 class ProductSizeInline(admin.TabularInline):
     model = ProductSize
     extra = 1
 
-class ProductAdmin(admin.ModelAdmin): # Admin interface for Product model
-    list_display = ['name', 'category', 'price', 'color', 'created_at', 'updated_at'] # Поля для отображения в списке
-    list_filter = ['category', 'created_at'] # Фильтры в правой части
-    search_fields = ['name', 'description', 'color'] # Поля для поиска
-    prepopulated_fields = {'slug': ('name',)} # Автоматическое заполнение поля slug на основе name
-    inlines = [ProductImageInline, ProductSizeInline]  # Добавляем ProductImageInline в ProductAdmin
 
-class CategoryAdmin(admin.ModelAdmin): # Admin interface for Category model
-    list_display = ['name', 'slug']
-    search_fields = ['name']
+class ProductAdmin(admin.ModelAdmin):
+    list_display = ['name', 'category', 'color', 'price']
+    list_filter = ['category', 'color']
+    search_fields = ['name', 'color', 'description']
     prepopulated_fields = {'slug': ('name',)}
+    inlines = [ProductImageInline, ProductSizeInline]
+
+
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ['name', 'slug']
+    prepopulated_fields = {'slug': ('name',)}
+
 
 class SizeAdmin(admin.ModelAdmin):
     list_display = ['name']
-    search_fields = ['name']
+
 
 admin.site.register(Category, CategoryAdmin)
 admin.site.register(Size, SizeAdmin)
-admin.site.register(Prodct, ProductAdmin)
+admin.site.register(Product, ProductAdmin)
