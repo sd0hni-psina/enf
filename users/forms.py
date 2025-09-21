@@ -1,5 +1,5 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm, UserChangeForm, AuthenticationForm
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import get_user_model, authenticate
 from django.utils.html import strip_tags
 from django.core.validators import RegexValidator
@@ -21,23 +21,26 @@ class CustomUserCreationForm(UserCreationForm):
         widget=forms.PasswordInput(attrs={'class': 'dotted-input w-full py-3 text-sm font-medium text-gray-900 placeholder-gray-500', 'placeholder': 'CONFIRM PASSWORD'})
     )
 
+
     class Meta:
         model = User
-        fields = ('email', 'first_name', 'last_name', 'password1', 'password2')
+        fields = ('first_name', 'last_name', 'email', 'password1', 'password2')
 
+    
     def clean_email(self):
         email = self.cleaned_data.get('email')
         if User.objects.filter(email=email).exists():
-            raise forms.ValidationError("Email already exists")
+            raise forms.ValidationError('This email is already in use.')
         return email
     
+
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.username = None 
+        user.username = None
         if commit:
             user.save()
         return user
-
+    
 
 class CustomUserLoginForm(AuthenticationForm):
     username = forms.CharField(label="Email", widget=forms.TextInput(attrs={'class': 'dotted-input w-full py-3 text-sm font-medium text-gray-900 placeholder-gray-500', 'placeholder': 'EMAIL'}))
@@ -46,18 +49,19 @@ class CustomUserLoginForm(AuthenticationForm):
         widget=forms.PasswordInput(attrs={'class': 'dotted-input w-full py-3 text-sm font-medium text-gray-900 placeholder-gray-500', 'placeholder': 'PASSWORD'})
     )
 
+     
     def clean(self):
         email = self.cleaned_data.get('username')
         password = self.cleaned_data.get('password')
 
         if email and password:
-            self.user_cache = authenticate(self.request, username=email, password=password)
+            self.user_cache = authenticate(self.request, email=email, password=password)
             if self.user_cache is None:
-                raise forms.ValidationError('Ivalid email or password.')
+                raise forms.ValidationError('Invalid email or password.')
             elif not self.user_cache.is_active:
                 raise forms.ValidationError('This account is inactive.')
         return self.cleaned_data
-    
+
 
 class CustomUserUpdateForm(forms.ModelForm):
     phone = forms.CharField(

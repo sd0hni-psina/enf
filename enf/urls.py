@@ -8,6 +8,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('users/', include('users.urls', namespace='users')),
     path('orders/', include('orders.urls', namespace='orders')),
+    path('payment/', include('payment.urls', namespace='payment')),
     path('cart/', include('cart.urls', namespace='cart')),  # Подключение URL-ов приложения cart
     path('', include('main.urls', namespace='main')),  # Подключение URL-ов приложения main
 ]

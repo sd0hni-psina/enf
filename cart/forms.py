@@ -16,19 +16,20 @@ class AddToCartForm(forms.Form):
             if sizes.exists():
                 self.fields['size_id'] = forms.ChoiceField(
                     choices=[(ps.id, ps.size.name) for ps in sizes],
-                    required=True,
-                    initial=sizes.first().id,
+                             required=True,
+                             initial=sizes.first().id
                 )
-        
+    
+
 class UpdateCartItemForm(forms.ModelForm):
     class Meta:
         model = CartItem
         fields = ['quantity']
-    
 
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.instance and self.instance.product.size:
+        if self.instance and self.instance.product_size:
             self.fields['quantity'].validators.append(
                 forms.validators.MaxValueValidator(self.instance.product_size.stock)
             )
