@@ -73,7 +73,7 @@
                                value="{{ product_size.id }}"
                                data-size="{{ product_size.size.name }}"
                                {% if product_size.stock == 0 %}disabled{% endif %}
-                                {% if forloop.first and product_size.stock > 0 %}checked{% endif %}>
+                               {% if forloop.first and product_size.stock > 0 %}checked{% endif %}>
                         <label for="size-{{ product_size.id }}"
                                class="block border border-gray-300 py-2 px-3 text-sm font-medium text-center cursor-pointer hover:border-gray-900 transition-colors {% if product_size.stock == 0 %}opacity-50 cursor-not-allowed{% endif %}">
                             {{ product_size.size.name }}
